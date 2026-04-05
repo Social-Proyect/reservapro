@@ -1,0 +1,138 @@
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --money-color: #27ae60;
+    --gem-color: #9b59b6;
+    --prestige-color: #f39c12;
+}
+
+body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.game-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+}
+
+.game-header {
+    background: var(--primary-color);
+    color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.game-nav .nav-link {
+    color: var(--primary-color);
+    border-radius: 8px;
+    margin-right: 5px;
+    transition: all 0.3s ease;
+}
+
+.game-nav .nav-link.active {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.game-tab {
+    display: none;
+    animation: fadeIn 0.5s ease;
+}
+
+.game-tab.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.worker-card, .factory-card {
+    border: none;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.worker-card:hover, .factory-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.worker-card.basic { border-left: 4px solid #95a5a6; }
+.worker-card.advanced { border-left: 4px solid #3498db; }
+.worker-card.expert { border-left: 4px solid #9b59b6; }
+
+.skill-bar {
+    height: 8px;
+    border-radius: 4px;
+    margin: 5px 0;
+    background: #ecf0f1;
+    overflow: hidden;
+}
+
+.skill-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.speed-skill { background: #e74c3c; }
+.efficiency-skill { background: #27ae60; }
+.management-skill { background: #3498db; }
+
+.production-animation {
+    animation: produce 2s ease infinite;
+}
+
+@keyframes produce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.currency-display span {
+    margin: 0 10px;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.money { color: var(--money-color); }
+.gems { color: var(--gem-color); }
+.prestige { color: var(--prestige-color); }
+
+.btn-game {
+    background: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 15px;
+    transition: all 0.3s ease;
+}
+
+.btn-game:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    color: white;
+}
+
+.upgrade-item {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid var(--secondary-color);
+}
+
+.ad-bonuses .btn {
+    border-radius: 8px;
+    font-weight: bold;
+}

@@ -1,0 +1,87 @@
+CREATE DATABASE factory_game;
+USE factory_game;
+
+-- Tabla de usuarios
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla de estado del juego
+CREATE TABLE game_state (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    money DECIMAL(15,2) DEFAULT 100.00,
+    gems INT DEFAULT 10,
+    prestige_points INT DEFAULT 0,
+    level INT DEFAULT 1,
+    experience DECIMAL(15,2) DEFAULT 0,
+    last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Tabla de trabajadores
+CREATE TABLE workers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    name VARCHAR(50) NOT NULL,
+    type ENUM('basic', 'advanced', 'expert') DEFAULT 'basic',
+    level INT DEFAULT 1,
+    experience DECIMAL(10,2) DEFAULT 0,
+    speed_skill INT DEFAULT 1,
+    efficiency_skill INT DEFAULT 1,
+    management_skill INT DEFAULT 1,
+    is_working BOOLEAN DEFAULT false,
+    current_task VARCHAR(50) DEFAULT NULL,
+    hire_cost DECIMAL(10,2) NOT NULL,
+    salary DECIMAL(10,2) DEFAULT 1.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Tabla de fábricas
+CREATE TABLE factories (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    type VARCHAR(50) NOT NULL,
+    level INT DEFAULT 1,
+    production_rate DECIMAL(10,2) DEFAULT 1.00,
+    upgrade_cost DECIMAL(10,2) NOT NULL,
+    assigned_workers INT DEFAULT 0,
+    max_workers INT DEFAULT 2,
+    is_producing BOOLEAN DEFAULT false,
+    current_product VARCHAR(50) DEFAULT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Tabla de productos
+CREATE TABLE products (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    factory_id INT,
+    product_type VARCHAR(50) NOT NULL,
+    quantity INT DEFAULT 0,
+    base_value DECIMAL(10,2) NOT NULL,
+    last_production TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (factory_id) REFERENCES factories(id) ON DELETE CASCADE
+);
+
+-- Tabla de mejoras
+CREATE TABLE upgrades (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    upgrade_type VARCHAR(50) NOT NULL,
+    level INT DEFAULT 0,
+    max_level INT DEFAULT 10,
+    cost DECIMAL(10,2) NOT NULL,
+    effect_value DECIMAL(5,2) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Insertar datos iniciales
+INSERT INTO upgrades (upgrade_type, cost, effect_value, max_level) VALUES 
+('speed', 100.00, 0.10, 10),
+('efficiency', 150.00, 0.05, 8),
+('management', 200.00, 0.08, 6);

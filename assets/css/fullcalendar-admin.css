@@ -1,0 +1,21 @@
+/* FullCalendar custom styles for admin panel */
+.fc {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    padding: 20px;
+}
+.fc-toolbar-title {
+    font-size: 1.5rem;
+    color: #6366f1;
+}
+.fc-daygrid-event {
+    font-size: 0.95rem;
+}
+.fc-event {
+    border-radius: 6px;
+    border: none;
+}
+.fc-day-today {
+    background: #f3f4f6 !important;
+}
