@@ -1,13 +1,29 @@
 <?php
-require_once 'config/database.php';
-$db = getDB();
+require_once 'config/supabase.php';
 $empresa_id = isset($_GET['empresa_id']) ? (int)$_GET['empresa_id'] : null;
 if (!$empresa_id) {
-    // Landing page con estadísticas globales
-    $total_empresas = $db->query("SELECT COUNT(*) FROM empresas")->fetchColumn();
-    $total_usuarios = $db->query("SELECT COUNT(*) FROM usuarios")->fetchColumn();
-    $total_citas = $db->query("SELECT COUNT(*) FROM citas")->fetchColumn();
-    $total_clientes = $db->query("SELECT COUNT(*) FROM clientes")->fetchColumn();
+    // Landing page con estadísticas globales usando Supabase
+    $total_empresas = 0;
+    $total_usuarios = 0;
+    $total_citas = 0;
+    $total_clientes = 0;
+
+    $empresas = supabase_request('/rest/v1/empresas?select=id');
+    if (isset($empresas['data'])) {
+        $total_empresas = count($empresas['data']);
+    }
+    $usuarios = supabase_request('/rest/v1/usuarios?select=id');
+    if (isset($usuarios['data'])) {
+        $total_usuarios = count($usuarios['data']);
+    }
+    $citas = supabase_request('/rest/v1/citas?select=id');
+    if (isset($citas['data'])) {
+        $total_citas = count($citas['data']);
+    }
+    $clientes = supabase_request('/rest/v1/clientes?select=id');
+    if (isset($clientes['data'])) {
+        $total_clientes = count($clientes['data']);
+    }
     ?>
     <!DOCTYPE html>
     <html lang="es">
@@ -63,17 +79,21 @@ if (!$empresa_id) {
     exit;
 }
 
-// Si hay empresa_id, cargar la configuración y servicios de esa empresa
-$stmt = $db->prepare("SELECT c.*, e.nombre AS nombre_negocio, e.logo, e.direccion, e.telefono, e.email, e.moneda, e.color_primario, e.color_secundario FROM configuracion c INNER JOIN empresas e ON c.empresa_id = e.id WHERE e.id = ? LIMIT 1");
-$stmt->execute([$empresa_id]);
-$config = $stmt->fetch();
+// Si hay empresa_id, cargar la configuración y servicios de esa empresa desde Supabase
+$config = null;
+$empresa = supabase_request("/rest/v1/configuracion?empresa_id=eq.$empresa_id&select=*,empresas(nombre,logo,direccion,telefono,email,moneda,color_primario,color_secundario)");
+if (isset($empresa['data'][0])) {
+    $config = $empresa['data'][0];
+}
 if (!$config) {
     echo '<h2>Empresa no encontrada o sin configuración.</h2>';
     exit;
 }
-$stmt = $db->prepare("SELECT * FROM servicios WHERE activo = 1 AND empresa_id = ? ORDER BY orden, nombre");
-$stmt->execute([$empresa_id]);
-$servicios = $stmt->fetchAll();
+$servicios = [];
+$servicios_resp = supabase_request("/rest/v1/servicios?activo=eq.1&empresa_id=eq.$empresa_id&order=orden,nombre");
+if (isset($servicios_resp['data'])) {
+    $servicios = $servicios_resp['data'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">

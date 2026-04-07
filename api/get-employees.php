@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once '../config/database.php';
+require_once '../config/supabase.php';
 
 try {
 
@@ -10,21 +10,23 @@ try {
         throw new Exception('ID de servicio y empresa requeridos');
     }
 
-    $db = getDB();
-    // Obtener empleados que pueden realizar este servicio y pertenecen a la empresa
-    $stmt = $db->prepare("
-        SELECT DISTINCT e.id, e.nombre, e.apellido, e.foto, e.especialidad, e.descripcion
-        FROM empleados e
-        INNER JOIN empleado_servicio es ON e.id = es.empleado_id
-        WHERE es.servicio_id = ? AND e.empresa_id = ? AND e.activo = 1
-        ORDER BY e.nombre
-    ");
-    $stmt->execute([$servicio_id, $empresa_id]);
-    $empleados = $stmt->fetchAll();
-
+    // Consulta a Supabase: empleados activos que pueden realizar el servicio y pertenecen a la empresa
+    $query = "/rest/v1/empleados?activo=eq.1&empresa_id=eq.$empresa_id&select=id,nombre,apellido,foto,especialidad,descripcion,empleado_servicio(servicio_id)&empleado_servicio.servicio_id=eq.$servicio_id&order=nombre";
+    $response = supabase_request($query);
+    if (!isset($response['data'])) {
+        throw new Exception('Error consultando Supabase');
+    }
+    // Filtrar empleados que tengan el servicio en la relación
+    $empleados = array_filter($response['data'], function($e) use ($servicio_id) {
+        if (!isset($e['empleado_servicio']) || !is_array($e['empleado_servicio'])) return false;
+        foreach ($e['empleado_servicio'] as $rel) {
+            if ($rel['servicio_id'] == $servicio_id) return true;
+        }
+        return false;
+    });
     jsonResponse([
         'success' => true,
-        'empleados' => $empleados
+        'empleados' => array_values($empleados)
     ]);
 
 } catch (Exception $e) {

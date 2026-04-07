@@ -1,6 +1,12 @@
 <?php
 header('Content-Type: application/json');
-require_once '../config/database.php';
+require_once '../config/supabase.php';
+function jsonResponse($data, $status = 200) {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 
 try {
@@ -12,15 +18,12 @@ try {
         throw new Exception('Fecha, servicio y empresa requeridos');
     }
 
-    $db = getDB();
-    // Obtener duración del servicio
-    $stmt = $db->prepare("SELECT duracion_minutos FROM servicios WHERE id = ? AND empresa_id = ?");
-    $stmt->execute([$servicio_id, $empresa_id]);
-    $servicio = $stmt->fetch();
-    if (!$servicio) {
+    // Obtener duración del servicio desde Supabase
+    $servicio_resp = supabase_request("/rest/v1/servicios?id=eq.$servicio_id&empresa_id=eq.$empresa_id");
+    if (!isset($servicio_resp['data'][0])) {
         throw new Exception('Servicio no encontrado');
     }
-    
+    $servicio = $servicio_resp['data'][0];
     $duracion = $servicio['duracion_minutos'];
     
     // Obtener día de la semana
@@ -30,25 +33,13 @@ try {
     // Obtener horarios de trabajo
     if ($empleado_id && $empleado_id != 0) {
         // Empleado específico
-        $stmt = $db->prepare("
-            SELECT hora_inicio, hora_fin 
-            FROM horarios_empleados 
-            WHERE empleado_id = ? AND dia_semana = ? AND activo = 1
-        ");
-        $stmt->execute([$empleado_id, $dia_semana]);
-        $horarios = $stmt->fetchAll();
+        $horarios_resp = supabase_request("/rest/v1/horarios_empleados?empleado_id=eq.$empleado_id&dia_semana=eq.$dia_semana&activo=eq.1");
+        $horarios = isset($horarios_resp['data']) ? $horarios_resp['data'] : [];
         $empleados_ids = [$empleado_id];
     } else {
         // Todos los empleados que pueden hacer el servicio y pertenezcan a la empresa
-        $stmt = $db->prepare("
-            SELECT DISTINCT he.empleado_id, he.hora_inicio, he.hora_fin 
-            FROM horarios_empleados he
-            INNER JOIN empleado_servicio es ON he.empleado_id = es.empleado_id
-            INNER JOIN empleados e ON he.empleado_id = e.id
-            WHERE es.servicio_id = ? AND he.dia_semana = ? AND he.activo = 1 AND e.empresa_id = ?
-        ");
-        $stmt->execute([$servicio_id, $dia_semana, $empresa_id]);
-        $horarios = $stmt->fetchAll();
+        $horarios_resp = supabase_request("/rest/v1/horarios_empleados?dia_semana=eq.$dia_semana&activo=eq.1");
+        $horarios = isset($horarios_resp['data']) ? $horarios_resp['data'] : [];
         $empleados_ids = array_unique(array_column($horarios, 'empleado_id'));
     }
     
@@ -76,48 +67,21 @@ try {
                 $slot_fin = clone $slot_datetime;
                 $slot_fin->modify("+{$duracion} minutes");
                 $disponible = true;
-                // Verificar bloqueos de horario por el administrador
-                $bloqueoStmt = $db->prepare("
-                    SELECT COUNT(*) as count
-                    FROM bloqueos_horario
-                    WHERE (empleado_id IS NULL OR empleado_id = ?)
-                    AND fecha_inicio <= ?
-                    AND fecha_fin > ?
-                ");
+                // Verificar bloqueos de horario por el administrador en Supabase
                 foreach ($empleados_ids as $emp_id) {
-                    $bloqueoStmt->execute([
-                        $emp_id,
-                        $slot_datetime->format('Y-m-d H:i:s'),
-                        $slot_datetime->format('Y-m-d H:i:s')
-                    ]);
-                    $bloqueo = $bloqueoStmt->fetch();
-                    if (!isset($bloqueo['count']) || $bloqueo['count'] > 0) {
+                    $bloqueo_resp = supabase_request("/rest/v1/bloqueos_horario?or=(empleado_id.is.null,empleado_id.eq.$emp_id)&fecha_inicio=lte." . $slot_datetime->format('Y-m-d H:i:s') . "&fecha_fin=gt." . $slot_datetime->format('Y-m-d H:i:s'));
+                    $bloqueo = isset($bloqueo_resp['data']) ? $bloqueo_resp['data'] : [];
+                    if (count($bloqueo) > 0) {
                         $disponible = false;
                         break;
                     }
                 }
-                // Verificar para cada empleado que podría hacer el servicio
+                // Verificar para cada empleado que podría hacer el servicio en Supabase
                 if ($disponible) {
                     foreach ($empleados_ids as $emp_id) {
-                        $stmt = $db->prepare("
-                            SELECT COUNT(*) as count 
-                            FROM citas 
-                            WHERE empleado_id = ? 
-                            AND estado IN ('pendiente', 'confirmada')
-                            AND (
-                                (fecha_hora < ? AND DATE_ADD(fecha_hora, INTERVAL duracion_minutos MINUTE) > ?)
-                                OR (fecha_hora >= ? AND fecha_hora < ?)
-                            )
-                        ");
-                        $stmt->execute([
-                            $emp_id,
-                            $slot_datetime->format('Y-m-d H:i:s'),
-                            $slot_datetime->format('Y-m-d H:i:s'),
-                            $slot_datetime->format('Y-m-d H:i:s'),
-                            $slot_fin->format('Y-m-d H:i:s')
-                        ]);
-                        $result = $stmt->fetch();
-                        if (!isset($result['count']) || $result['count'] == 0) {
+                        $citas_resp = supabase_request("/rest/v1/citas?empleado_id=eq.$emp_id&estado=in.(pendiente,confirmada)&fecha_hora=eq." . $slot_datetime->format('Y-m-d H:i:s'));
+                        $result = isset($citas_resp['data']) ? $citas_resp['data'] : [];
+                        if (count($result) == 0) {
                             $disponible = true;
                             break;
                         } else {
