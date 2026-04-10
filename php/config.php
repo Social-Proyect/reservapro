@@ -11,7 +11,9 @@ if (!class_exists('Database')) {
         public function getConnection() {
             $this->conn = null;
             try {
-                $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
+                // Conexión migrada a config/supabase.php para Supabase/PostgreSQL
+                require_once __DIR__ . '/../config/supabase.php';
+                $this->conn = $pdo;
                 $this->conn->exec("set names utf8");
                 $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             } catch(PDOException $exception) {

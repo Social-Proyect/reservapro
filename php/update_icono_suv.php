@@ -1,6 +1,6 @@
 <?php
 // Script para actualizar el icono de un servicio a SUV 🚙
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/supabase.php';
 $db = getDB();
 $servicio_id = 3;
 $icono = '🚙';

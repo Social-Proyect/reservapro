@@ -1,6 +1,6 @@
 <?php
 // Script para actualizar el icono de un servicio a SVG pickup doble cabina
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/supabase.php';
 $db = getDB();
 $servicio_id = 3;
 $icono = 'assets/img/pickup_doble_cabina.svg';

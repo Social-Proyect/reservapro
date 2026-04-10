@@ -1,6 +1,6 @@
 <?php
 // Script para actualizar el campo imagen de un empleado con un emoji de cuerpo completo
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/supabase.php';
 $db = getDB();
 $empleado_id = 1; // Cambia este valor al id del empleado que desees
 $emoji = '🧍'; // Emoji de persona de pie (cuerpo completo)

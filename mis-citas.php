@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config/database.php';
+require_once 'config/supabase.php';
 
 $db = getDB();
 $stmt = $db->query("SELECT * FROM configuracion LIMIT 1");

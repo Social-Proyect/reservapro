@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once 'config/supabase.php';
 
 echo "<!DOCTYPE html>
 <html lang='es'>
@@ -80,10 +80,10 @@ try {
     echo "<div class='info'>
         <h3>Posibles soluciones:</h3>
         <ul>
-            <li>Verifica que XAMPP esté ejecutándose (Apache y MySQL)</li>
+            <li>Verifica que XAMPP esté ejecutándose (Apache) y que tu base de datos de Supabase esté activa</li>
             <li>Asegúrate de que la base de datos 'reservapro' exista</li>
             <li>Ejecuta el archivo database.sql en phpMyAdmin</li>
-            <li>Verifica las credenciales en config/database.php</li>
+            <li>Verifica las credenciales en config/supabase.php</li>
         </ul>
     </div>";
 }

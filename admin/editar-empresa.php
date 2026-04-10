@@ -4,7 +4,7 @@ if (!isset($_SESSION['admin_id']) || !isset($_SESSION['empresa_id'])) {
     header('Location: admin-login.php');
     exit;
 }
-require_once '../config/database.php';
+require_once '../config/supabase.php';
 $db = getDB();
 $empresa_id = $_SESSION['empresa_id'];
 

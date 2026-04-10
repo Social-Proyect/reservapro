@@ -2,7 +2,7 @@
 // php/auth.php - Versión simplificada y depurada
 
 // Incluir config solo una vez
-require_once 'config.php';
+require_once __DIR__ . '/../config/supabase.php';
 
 // Verificar si ya hay salida
 if (headers_sent()) {
