@@ -1,5 +1,13 @@
 <?php
+
 require_once '../config/supabase.php';
+
+// Definir sanitize aquí porque database.php ya no se incluye
+if (!function_exists('sanitize')) {
+    function sanitize($data) {
+        return htmlspecialchars(strip_tags(trim($data)));
+    }
+}
 
 $error = '';
 
@@ -9,52 +17,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = isset($_POST['password']) ? $_POST['password'] : '';
 
     if ($empresa_id > 0 && !empty($username) && !empty($password)) {
-        try {
-            $db = getDB();
-            // Buscar empresa por ID
-            $stmt = $db->prepare("SELECT id FROM empresas WHERE id = ? LIMIT 1");
-            $stmt->execute([$empresa_id]);
-            $empresaRow = $stmt->fetch();
-            if (!$empresaRow) {
-                $error = 'Empresa no encontrada';
-            } else {
-                $stmt = $db->prepare("SELECT * FROM usuarios WHERE empresa_id = ? AND username = ? AND activo = 1");
-                $stmt->execute([$empresa_id, $username]);
-                $user = $stmt->fetch();
-                // DEBUG TEMPORAL
-                echo '<pre style="background:#222;color:#fff;padding:16px;">';
-                echo "POST empresa_id: ".$empresa_id."\n";
-                echo "POST username: ".$username."\n";
-                echo "POST password: ".$password."\n";
-                echo "DB usuario encontrado: ".print_r($user, true)."\n";
-                if ($user) {
-                    echo "Hash en DB: ".$user['password']."\n";
-                    echo "password_verify: ".(password_verify($password, $user['password']) ? 'OK' : 'FAIL')."\n";
-                }
-                echo '</pre>';
-                // FIN DEBUG
-                $login_ok = false;
-                if ($user) {
-                    if (password_verify($password, $user['password'])) {
-                        $login_ok = true;
-                    } elseif ($password === $user['password']) { // Permitir texto plano solo para pruebas
-                        $login_ok = true;
-                    }
-                }
-                if ($login_ok) {
-                    $_SESSION['admin_logged_in'] = true;
-                    $_SESSION['admin_id'] = $user['id'];
-                    $_SESSION['admin_nombre'] = $user['nombre'];
-                    $_SESSION['admin_rol'] = $user['rol'];
-                    $_SESSION['empresa_id'] = $empresa_id;
-                    header('Location: index.php');
-                    exit;
-                } else {
-                    $error = 'Usuario o contraseña incorrectos';
+        // Buscar empresa por ID en Supabase
+        $empresaRes = supabase_request("/rest/v1/empresas?id=eq.$empresa_id&select=id", "GET");
+        $empresaRow = isset($empresaRes['data'][0]) ? $empresaRes['data'][0] : null;
+        if (!$empresaRow) {
+            $error = 'Empresa no encontrada';
+        } else {
+            // Buscar usuario en Supabase
+            $userRes = supabase_request("/rest/v1/usuarios?empresa_id=eq.$empresa_id&username=eq.$username&activo=eq.1", "GET");
+            $user = isset($userRes['data'][0]) ? $userRes['data'][0] : null;
+            // DEBUG TEMPORAL
+            echo '<pre style="background:#222;color:#fff;padding:16px;">';
+            echo "POST empresa_id: ".$empresa_id."\n";
+            echo "POST username: ".$username."\n";
+            echo "POST password: ".$password."\n";
+            echo "DB usuario encontrado: ".print_r($user, true)."\n";
+            if ($user) {
+                echo "Hash en DB: ".$user['password']."\n";
+                echo "password_verify: ".(password_verify($password, $user['password']) ? 'OK' : 'FAIL')."\n";
+            }
+            echo '</pre>';
+            // FIN DEBUG
+            $login_ok = false;
+            if ($user) {
+                if (password_verify($password, $user['password'])) {
+                    $login_ok = true;
+                } elseif ($password === $user['password']) { // Permitir texto plano solo para pruebas
+                    $login_ok = true;
                 }
             }
-        } catch (Exception $e) {
-            $error = 'Error al conectar con la base de datos: ' . $e->getMessage();
+            if ($login_ok) {
+                $_SESSION['admin_logged_in'] = true;
+                $_SESSION['admin_id'] = $user['id'];
+                $_SESSION['admin_nombre'] = $user['nombre'];
+                $_SESSION['admin_rol'] = $user['rol'];
+                $_SESSION['empresa_id'] = $empresa_id;
+                header('Location: index.php');
+                exit;
+            } else {
+                $error = 'Usuario o contraseña incorrectos';
+            }
         }
     } else {
         $error = 'Por favor complete todos los campos';

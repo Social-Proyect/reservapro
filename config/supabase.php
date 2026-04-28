@@ -3,8 +3,8 @@
 // Configuración de Supabase para PHP
 
 // Reemplaza estos valores con los de tu proyecto Supabase
-const SUPABASE_URL = 'https://TU_SUPABASE_URL.supabase.co';
-const SUPABASE_API_KEY = 'TU_SUPABASE_API_KEY';
+const SUPABASE_URL = 'https://fcevakmwpcujvaermkzo.supabase.co';
+const SUPABASE_API_KEY = 'sb_publishable_WQGmuNXfqjdk7o9heE1hfA_N_-uJ6IS';
 
 function supabase_request($endpoint, $method = 'GET', $data = null, $headers = []) {
     $url = SUPABASE_URL . $endpoint;

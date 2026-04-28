@@ -12,21 +12,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password2 = $_POST['password2'] ?? '';
     if ($nombre_empresa && $nombre && $username && $password && $password === $password2) {
         try {
-            $db = getDB();
-            // Crear empresa
-            $stmt = $db->prepare('INSERT INTO empresas (nombre) VALUES (?)');
-            $stmt->execute([$nombre_empresa]);
-            $empresa_id = $db->lastInsertId();
-            // Crear usuario admin
-            $stmt = $db->prepare('SELECT id FROM usuarios WHERE empresa_id = ? AND username = ?');
-            $stmt->execute([$empresa_id, $username]);
-            if ($stmt->fetch()) {
-                $error = 'El usuario ya existe para esta empresa.';
+            // Crear empresa en Supabase
+            $empresaRes = supabase_request('/rest/v1/empresas', 'POST', [
+                'nombre' => $nombre_empresa
+            ]);
+            if (!empty($empresaRes['error']) || empty($empresaRes['data'][0]['id'])) {
+                $error = 'Error al registrar empresa: ' . ($empresaRes['error'] ?? 'No se pudo crear la empresa.');
             } else {
-                $hash = password_hash($password, PASSWORD_BCRYPT);
-                $stmt = $db->prepare('INSERT INTO usuarios (empresa_id, nombre, username, password, rol, activo) VALUES (?, ?, ?, ?, ?, 1)');
-                $stmt->execute([$empresa_id, $nombre, $username, $hash, 'admin']);
-                $success = 'Usuario administrador y empresa registrados correctamente. El ID de tu empresa es: <b>' . htmlspecialchars($empresa_id) . '</b>. Guárdalo para iniciar sesión.';
+                $empresa_id = $empresaRes['data'][0]['id'];
+                // Verificar si el usuario ya existe para esta empresa
+                $userCheck = supabase_request("/rest/v1/usuarios?empresa_id=eq.$empresa_id&username=eq.$username", "GET");
+                if (!empty($userCheck['data']) && count($userCheck['data']) > 0) {
+                    $error = 'El usuario ya existe para esta empresa.';
+                } else {
+                    $hash = password_hash($password, PASSWORD_BCRYPT);
+                    $userRes = supabase_request('/rest/v1/usuarios', 'POST', [
+                        'empresa_id' => $empresa_id,
+                        'nombre' => $nombre,
+                        'username' => $username,
+                        'password' => $hash,
+                        'rol' => 'admin',
+                        'activo' => 1
+                    ]);
+                    if (!empty($userRes['error'])) {
+                        $error = 'Error al registrar usuario: ' . $userRes['error'];
+                    } else {
+                        $success = 'Usuario administrador y empresa registrados correctamente. El ID de tu empresa es: <b>' . htmlspecialchars($empresa_id) . '</b>. Guárdalo para iniciar sesión.';
+                    }
+                }
             }
         } catch (Exception $e) {
             $error = 'Error al registrar: ' . $e->getMessage();
