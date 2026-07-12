@@ -1,9 +1,7 @@
 <?php
-// Configuración de la base de datos
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'reservapro');
+// Configuración de la base de datos (SQLite local)
+// Archivo SQLite en la raíz del proyecto: /database.sqlite
+define('DB_FILE', realpath(__DIR__ . '/../') . DIRECTORY_SEPARATOR . 'database.sqlite');
 
 // Configuración general
 define('SITE_URL', 'http://localhost/reservapro');
@@ -26,8 +24,32 @@ class Database {
     
     private function __construct() {
         try {
-            // Conexión deshabilitada. Usar config/supabase.php para Supabase/PostgreSQL
-            throw new Exception('Conexión MySQL deshabilitada. Usa config/supabase.php');
+            // Crear archivo si no existe
+            if (!file_exists(DB_FILE)) {
+                // Intenta crear el archivo en la raíz del proyecto
+                $dir = dirname(DB_FILE);
+                if (!is_dir($dir)) {
+                    mkdir($dir, 0777, true);
+                }
+                touch(DB_FILE);
+            }
+
+            $this->conn = new PDO(
+                "sqlite:" . DB_FILE,
+                null,
+                null,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false
+                ]
+            );
+
+            $this->initializeSchema();
+
+            // Habilitar claves foráneas y modo WAL para mejor concurrencia
+            $this->conn->exec('PRAGMA foreign_keys = ON');
+            $this->conn->exec('PRAGMA journal_mode = WAL');
         } catch(PDOException $e) {
             die("Error de conexión: " . $e->getMessage());
         }
@@ -43,7 +65,41 @@ class Database {
     public function getConnection() {
         return $this->conn;
     }
-    
+
+    private function initializeSchema() {
+        $stmt = $this->conn->query("SELECT COUNT(name) FROM sqlite_master WHERE type='table' AND name='empresas'");
+        if ($stmt && $stmt->fetchColumn() == 0) {
+            $schemaPath = realpath(__DIR__ . '/../database_sqlite.sql');
+            if ($schemaPath && file_exists($schemaPath)) {
+                $schema = file_get_contents($schemaPath);
+                if ($schema !== false) {
+                    $this->conn->exec($schema);
+                }
+            }
+        }
+
+        $this->runMigrations();
+    }
+
+    private function runMigrations() {
+        $this->addColumnIfNotExists('empresas', 'moneda', "TEXT DEFAULT '$'");
+        $this->addColumnIfNotExists('clientes', 'password', "TEXT");
+    }
+
+    private function addColumnIfNotExists($table, $column, $definition) {
+        $stmt = $this->conn->query("PRAGMA table_info($table)");
+        $exists = false;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            if (isset($row['name']) && $row['name'] === $column) {
+                $exists = true;
+                break;
+            }
+        }
+        if (!$exists) {
+            $this->conn->exec("ALTER TABLE $table ADD COLUMN $column $definition");
+        }
+    }
+
     // Prevenir clonación
     private function __clone() {}
     

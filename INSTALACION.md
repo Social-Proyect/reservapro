@@ -19,6 +19,13 @@
 8. Selecciona el archivo `database.sql` de este proyecto
 9. Clic en "Continuar"
 
+### ⚙️ Opción: Usar SQLite (local)
+
+- Habilita la extensión `pdo_sqlite` en tu `php.ini` (reinicia Apache).
+- No es necesario crear la base en phpMyAdmin: el archivo `database.sqlite` se crea automáticamente en la raíz del proyecto al cargar la aplicación.
+- Si quieres poblar datos, usa una herramienta como "DB Browser for SQLite" para importar o convertir `database.sql` a SQLite.
+- Verifica que `config/database.php` esté presente y que el proyecto tenga permisos de escritura en la carpeta.
+
 ### 3️⃣ Verificar Configuración
 Abre el archivo: `config/database.php`
 

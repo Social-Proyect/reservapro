@@ -1,6 +1,6 @@
 <?php
 require_once 'auth.php';
-require_once '../config/supabase.php';
+require_once '../config/database.php';
 
 
 $db = getDB();
@@ -54,11 +54,11 @@ $tasa_ocupacion = $ocupacion['slots_disponibles'] > 0
 // Empleado más solicitado
 $stmt = $db->prepare("
     SELECT 
-        CONCAT(e.nombre, ' ', e.apellido) as empleado_nombre,
+        e.nombre || ' ' || e.apellido as empleado_nombre,
         COUNT(c.id) as total_citas
     FROM citas c
     INNER JOIN empleados e ON c.empleado_id = e.id
-    WHERE c.fecha_hora >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    WHERE c.fecha_hora >= datetime('now', '-30 days')
       AND c.empresa_id = ?
       AND e.empresa_id = ?
     GROUP BY c.empleado_id
@@ -75,7 +75,7 @@ $stmt = $db->prepare("
         COUNT(c.id) as total_ventas
     FROM citas c
     INNER JOIN servicios s ON c.servicio_id = s.id
-    WHERE c.fecha_hora >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    WHERE c.fecha_hora >= datetime('now', '-30 days')
       AND c.empresa_id = ?
       AND s.empresa_id = ?
     GROUP BY c.servicio_id
@@ -89,8 +89,8 @@ $servicio_top = $stmt->fetch();
 $stmt = $db->prepare("
         SELECT c.*, 
                      s.nombre as servicio_nombre,
-                     CONCAT(e.nombre, ' ', e.apellido) as empleado_nombre,
-                     CONCAT(cl.nombre, ' ', IFNULL(cl.apellido, '')) as cliente_nombre,
+                     e.nombre || ' ' || e.apellido as empleado_nombre,
+                     cl.nombre || ' ' || IFNULL(cl.apellido, '') as cliente_nombre,
                      cl.telefono as cliente_telefono
         FROM citas c
         INNER JOIN servicios s ON c.servicio_id = s.id
@@ -98,7 +98,7 @@ $stmt = $db->prepare("
         INNER JOIN clientes cl ON c.cliente_id = cl.id
         WHERE DATE(c.fecha_hora) = ? 
             AND c.empresa_id = ?
-            AND c.fecha_hora >= NOW()
+            AND c.fecha_hora >= datetime('now')
             AND c.estado IN ('pendiente', 'confirmada')
         ORDER BY c.fecha_hora
         LIMIT 5

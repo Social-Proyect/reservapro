@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/supabase.php';
+require_once 'config.php';
 
 class WorkerManager {
     private $conn;

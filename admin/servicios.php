@@ -4,7 +4,7 @@ if (!isset($_SESSION['admin_id'])) {
     header('Location: login.php');
     exit;
 }
-require_once '../config/supabase.php';
+require_once '../config/database.php';
 
 $db = getDB();
 $empresa_id = $_SESSION['empresa_id'] ?? null;
@@ -222,7 +222,7 @@ if ($empresa && isset($empresa['moneda'])) {
 // Activar/desactivar servicio
 if (isset($_GET['toggle'])) {
     $sid = (int)$_GET['toggle'];
-    $stmt = $db->prepare('UPDATE servicios SET activo = IF(activo=1,0,1) WHERE id=? AND empresa_id=?');
+    $stmt = $db->prepare('UPDATE servicios SET activo = CASE WHEN activo = 1 THEN 0 ELSE 1 END WHERE id=? AND empresa_id=?');
     $stmt->execute([$sid, $empresa_id]);
     header('Location: servicios.php');
     exit;

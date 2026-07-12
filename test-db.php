@@ -1,5 +1,5 @@
 <?php
-require_once 'config/supabase.php';
+require_once 'config/database.php';
 
 echo "=== TEST DE BASE DE DATOS ===\n\n";
 
